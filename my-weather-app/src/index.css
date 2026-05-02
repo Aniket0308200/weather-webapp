@@ -1,0 +1,302 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
+}
+
+/* Utility classes */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-card {
+  backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-hover {
+  backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-hover:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* Raindrop Animation */
+@keyframes raindrop-fall {
+  0% {
+    transform: translateY(-10vh) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+.raindrop {
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+  border-radius: 1px;
+  animation: raindrop-fall linear infinite;
+}
+
+/* Falling Leaves Animation */
+@keyframes leaf-fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.leaf {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(ellipse at 30% 30%, #ff6b35, #d84315);
+  border-radius: 0 100% 0 100%;
+  animation: leaf-fall linear infinite;
+}
+
+/* Snowflake Animation */
+@keyframes snowflake-fall {
+  0% {
+    transform: translateY(-10vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.snowflake {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: snowflake-fall ease-in-out infinite;
+}
+
+/* Sun Flare Animation */
+@keyframes sun-flare {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.sun-flare {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 200, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  top: -100px;
+  right: -100px;
+  animation: sun-flare 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Cloud Float Animation */
+@keyframes cloud-float {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(30px);
+  }
+}
+
+.cloud-bg {
+  position: absolute;
+  opacity: 0.15;
+  animation: cloud-float 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Heat Shimmer */
+@keyframes heat-shimmer {
+  0%, 100% {
+    transform: skewY(0deg);
+  }
+  50% {
+    transform: skewY(0.5deg);
+  }
+}
+
+.heat-shimmer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  animation: heat-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Icon Animations */
+@keyframes rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+  }
+  50% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+  }
+}
+
+.icon-rotate {
+  animation: rotate-slow 20s linear infinite;
+}
+
+.icon-bounce {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+.icon-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Smooth Transitions */
+.transition-smooth {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Soft Shadow */
+.shadow-soft {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-soft-lg {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Rounded Organic */
+.rounded-organic {
+  border-radius: 2.5rem;
+}
+
+.rounded-organic-lg {
+  border-radius: 3rem;
+}
+
+/* Autocomplete Dropdown */
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.autocomplete-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.autocomplete-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
