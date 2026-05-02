@@ -1,46 +1,54 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+// Map weather codes to background images
+const getBackgroundImage = (weatherCode) => {
+  // Clear/Sunny weather
+  if (weatherCode === 1000) {
+    return 'url(/src/assets/cloud-for-sun.jpg)';
+  }
+  // Partly cloudy
+  else if (weatherCode === 1003 || weatherCode === 1006) {
+    return 'url(/src/assets/basant-panchami-cloud.jpg)';
+  }
+  // Overcast
+  else if (weatherCode === 1009) {
+    return 'url(/src/assets/dark-cloud.jpg)';
+  }
+  // Mist/Fog
+  else if (weatherCode === 1030 || weatherCode === 1135) {
+    return 'url(/src/assets/more-cloud-for-night.jpg)';
+  }
+  // Rainy
+  else if (weatherCode >= 1063 && weatherCode <= 1195) {
+    return 'url(/src/assets/rainy-cloud.jpg)';
+  }
+  // Snowy
+  else if (weatherCode >= 1204 && weatherCode <= 1252) {
+    return 'url(/src/assets/snowflack-cloud.jpg)';
+  }
+  // Stormy/Thunderstorm
+  else if (weatherCode >= 1273 && weatherCode <= 1282) {
+    return 'url(/src/assets/cloud-thanderstroom.jpg)';
+  }
+  // Winter rain
+  else if (weatherCode >= 1150 && weatherCode <= 1201) {
+    return 'url(/src/assets/winter-rainy-cloud.jpg)';
+  }
+  // Default fallback
+  return 'url(/src/assets/cloud-for-sun.jpg)';
+};
+
 export default function DynamicBackground({ weatherCode, isDark }) {
   const [raindrops, setRaindrops] = useState([]);
   const [snowflakes, setSnowflakes] = useState([]);
   const [leaves, setLeaves] = useState([]);
-  const [backgroundColor, setBackgroundColor] = useState('linear-gradient(135deg, rgb(96, 165, 250) 0%, rgb(34, 197, 94) 50%, rgb(59, 130, 246) 100%)');
+  const [backgroundImage, setBackgroundImage] = useState('url(/src/assets/cloud-for-sun.jpg)');
 
-  // Determine background color and effects based on weather code
+  // Determine background image based on weather code
   useEffect(() => {
-    let bgColor = 'linear-gradient(135deg, rgb(96, 165, 250) 0%, rgb(34, 197, 94) 50%, rgb(59, 130, 246) 100%)';
-    
-    // Clear weather (sunny)
-    if (weatherCode === 1000) {
-      bgColor = 'linear-gradient(135deg, rgb(255, 193, 7) 0%, rgb(255, 152, 0) 50%, rgb(255, 87, 34) 100%)';
-    }
-    // Partly cloudy
-    else if (weatherCode === 1003 || weatherCode === 1006) {
-      bgColor = 'linear-gradient(135deg, rgb(189, 189, 189) 0%, rgb(158, 158, 158) 50%, rgb(117, 117, 117) 100%)';
-    }
-    // Overcast
-    else if (weatherCode === 1009) {
-      bgColor = 'linear-gradient(135deg, rgb(144, 144, 144) 0%, rgb(97, 97, 97) 50%, rgb(66, 66, 66) 100%)';
-    }
-    // Mist/Fog
-    else if (weatherCode === 1030 || weatherCode === 1135) {
-      bgColor = 'linear-gradient(135deg, rgb(176, 176, 176) 0%, rgb(128, 128, 128) 50%, rgb(105, 105, 105) 100%)';
-    }
-    // Rainy
-    else if (weatherCode >= 1063 && weatherCode <= 1195) {
-      bgColor = 'linear-gradient(135deg, rgb(55, 65, 81) 0%, rgb(31, 41, 55) 50%, rgb(15, 23, 42) 100%)';
-    }
-    // Snowy
-    else if (weatherCode >= 1204 && weatherCode <= 1252) {
-      bgColor = 'linear-gradient(135deg, rgb(226, 232, 240) 0%, rgb(203, 213, 225) 50%, rgb(148, 163, 184) 100%)';
-    }
-    // Stormy
-    else if (weatherCode >= 1273 && weatherCode <= 1282) {
-      bgColor = 'linear-gradient(135deg, rgb(30, 27, 34) 0%, rgb(55, 48, 163) 50%, rgb(63, 81, 181) 100%)';
-    }
-
-    setBackgroundColor(bgColor);
+    const bgImage = getBackgroundImage(weatherCode);
+    setBackgroundImage(bgImage);
   }, [weatherCode]);
 
   // Generate raindrops for rainy weather
@@ -91,15 +99,28 @@ export default function DynamicBackground({ weatherCode, isDark }) {
 
   return (
     <>
-      {/* Dynamic Background */}
+      {/* Dynamic Background Image with Overlay */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          background: backgroundColor,
-          transition: 'background 1s ease-in-out',
+          backgroundImage: backgroundImage,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          transition: 'background-image 1s ease-in-out',
           zIndex: 0,
         }}
-      />
+      >
+        {/* Overlay only on the background image */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.25)',
+            transition: 'background 0.3s ease-in-out',
+          }}
+        />
+      </div>
 
       {/* Raindrop Effect - Heavy Rain */}
       {raindrops.length > 0 && (

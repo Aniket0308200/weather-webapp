@@ -43,6 +43,13 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Dark mode styles for glass cards */
+[data-dark-mode="true"] .glass-card {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .glass-card-hover {
@@ -54,9 +61,20 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark mode styles for glass card hover */
+[data-dark-mode="true"] .glass-card-hover {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 .glass-card-hover:hover {
   background-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+[data-dark-mode="true"] .glass-card-hover:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
 }
 
 /* Raindrop Animation */
@@ -251,6 +269,18 @@
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Header Text Visibility */
+.header-text {
+  text-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  color: white;
+  font-weight: bold;
+}
+
+.header-subtitle {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* Soft Shadow */
 .shadow-soft {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -284,6 +314,13 @@
   overflow-y: auto;
   z-index: 50;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Dark mode autocomplete dropdown */
+[data-dark-mode="true"] .autocomplete-dropdown {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .autocomplete-item {
@@ -291,10 +328,15 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .autocomplete-item:hover {
   background-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-dark-mode="true"] .autocomplete-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .autocomplete-item:last-child {

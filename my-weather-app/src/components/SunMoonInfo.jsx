@@ -1,6 +1,24 @@
 import { motion } from 'framer-motion';
 import { Sun, Moon, Clock } from 'lucide-react';
 
+// Helper function to get direction from degrees
+const getDirectionFromDegrees = (degrees) => {
+  if (degrees === null || degrees === undefined) return 'N';
+  
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const index = Math.round(degrees / 22.5) % 16;
+  return directions[index];
+};
+
+// Get cardinal direction (N, S, E, W, NE, NW, SE, SW)
+const getCardinalDirection = (degrees) => {
+  if (degrees === null || degrees === undefined) return 'N';
+  
+  const cardinalDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const index = Math.round(degrees / 45) % 8;
+  return cardinalDirections[index];
+};
+
 export default function SunMoonInfo({ weather, theme }) {
   if (!weather) return null;
 
@@ -34,6 +52,13 @@ export default function SunMoonInfo({ weather, theme }) {
   const moonriseTime = parseTime(weather.moonrise);
   const moonsetTime = parseTime(weather.moonset);
 
+  // Get directions - sunrise typically from East, sunset from West
+  // Moonrise and moonset vary but we'll use approximate directions
+  const sunriseDirection = getCardinalDirection(90); // East
+  const sunsetDirection = getCardinalDirection(270); // West
+  const moonriseDirection = getCardinalDirection(weather.windDirection || 90); // Use wind direction or default to East
+  const moonsetDirection = getCardinalDirection((weather.windDirection + 180) % 360 || 270); // Opposite of moonrise
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -57,7 +82,10 @@ export default function SunMoonInfo({ weather, theme }) {
             <div className="p-2 rounded-lg bg-yellow-500/20">
               <Sun size={20} className="text-yellow-300" />
             </div>
-            <p className="text-sm font-semibold text-white/70">Sunrise</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/70">Sunrise</p>
+              <p className="text-xs text-white/50">from {sunriseDirection}</p>
+            </div>
           </div>
           <p className="text-lg font-bold text-white">{sunriseTime}</p>
         </motion.div>
@@ -73,7 +101,10 @@ export default function SunMoonInfo({ weather, theme }) {
             <div className="p-2 rounded-lg bg-orange-500/20">
               <Sun size={20} className="text-orange-300" />
             </div>
-            <p className="text-sm font-semibold text-white/70">Sunset</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/70">Sunset</p>
+              <p className="text-xs text-white/50">to {sunsetDirection}</p>
+            </div>
           </div>
           <p className="text-lg font-bold text-white">{sunsetTime}</p>
         </motion.div>
@@ -89,7 +120,10 @@ export default function SunMoonInfo({ weather, theme }) {
             <div className="p-2 rounded-lg bg-blue-500/20">
               <Moon size={20} className="text-blue-300" />
             </div>
-            <p className="text-sm font-semibold text-white/70">Moonrise</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/70">Moonrise</p>
+              <p className="text-xs text-white/50">from {moonriseDirection}</p>
+            </div>
           </div>
           <p className="text-lg font-bold text-white">{moonriseTime}</p>
         </motion.div>
@@ -105,7 +139,10 @@ export default function SunMoonInfo({ weather, theme }) {
             <div className="p-2 rounded-lg bg-indigo-500/20">
               <Moon size={20} className="text-indigo-300" />
             </div>
-            <p className="text-sm font-semibold text-white/70">Moonset</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/70">Moonset</p>
+              <p className="text-xs text-white/50">to {moonsetDirection}</p>
+            </div>
           </div>
           <p className="text-lg font-bold text-white">{moonsetTime}</p>
         </motion.div>

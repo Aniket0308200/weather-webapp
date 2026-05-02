@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Cloud, MapPin, Settings, Home, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 
 export default function Navigation({ activeTab, setActiveTab, theme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,7 +42,6 @@ export default function Navigation({ activeTab, setActiveTab, theme }) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">WeatherOS</h1>
-              <p className="text-xs text-white/50">Premium Dashboard</p>
             </div>
           </div>
         </motion.div>
@@ -196,5 +196,3 @@ export default function Navigation({ activeTab, setActiveTab, theme }) {
     </>
   );
 }
-
-import { AnimatePresence } from 'framer-motion';

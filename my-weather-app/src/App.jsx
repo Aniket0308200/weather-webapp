@@ -8,6 +8,7 @@ import Navigation from './components/Navigation';
 import RealWorldMap from './components/RealWorldMap';
 import SunMoonInfo from './components/SunMoonInfo';
 import { getThemeByWeatherCode } from './utils/weatherTheme';
+import { getCustomWeatherIcon, getBackgroundType } from './utils/weatherIcons';
 
 const WEATHER_API_KEY = 'f8e24dd296b7444cb27141718260105';
 const WEATHER_API_BASE = 'https://api.weatherapi.com/v1';
@@ -22,6 +23,16 @@ export default function App() {
   const [savedLocations, setSavedLocations] = useState([]);
   const [theme, setTheme] = useState(getThemeByWeatherCode(1000));
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [saveNotification, setSaveNotification] = useState(false);
+  const [, setUpdateTrigger] = useState(0);
+
+  // Update hourly forecast every minute to reflect "Now" label changes
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setUpdateTrigger((prev) => prev + 1);
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   // Load saved locations
   useEffect(() => {
@@ -100,7 +111,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchWeather('Delhi');
+    fetchWeather('Mumbai');
   }, []);
 
   const handleSaveLocation = () => {
@@ -109,11 +120,76 @@ export default function App() {
       const updated = [...savedLocations, newLocation];
       setSavedLocations(updated);
       localStorage.setItem('savedLocations', JSON.stringify(updated));
+      
+      // Show notification
+      setSaveNotification(true);
+      setTimeout(() => setSaveNotification(false), 3000);
     }
+  };
+
+  // Get filtered hourly data for 24-hour cycle starting from current time
+  const getFilteredHourlyData = () => {
+    if (!hourlyData || hourlyData.length === 0) return [];
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentDate = now.toISOString().split('T')[0];
+
+    // Create a 24-hour range starting from current hour
+    const filtered = [];
+    
+    // Step 1: Add all remaining hours from today (current hour to 23:00)
+    const todayHours = hourlyData.filter((hour) => {
+      const hourDate = hour.time.split(' ')[0];
+      const hourTime = hour.time.split(' ')[1];
+      const [hourNum] = hourTime.split(':');
+      const hour24 = parseInt(hourNum);
+
+      return hourDate === currentDate && hour24 >= currentHour;
+    });
+
+    filtered.push(...todayHours);
+
+    // Step 2: If we don't have 24 hours yet, add hours from tomorrow
+    if (filtered.length < 24) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDate = tomorrow.toISOString().split('T')[0];
+      
+      const hoursNeeded = 24 - filtered.length;
+      const tomorrowHours = hourlyData
+        .filter((hour) => {
+          const hourDate = hour.time.split(' ')[0];
+          return hourDate === tomorrowDate;
+        })
+        .slice(0, hoursNeeded);
+
+      filtered.push(...tomorrowHours);
+    }
+
+    return filtered.slice(0, 24); // Ensure exactly 24 hours
+  };
+
+  // Get display label for hour (Now or time)
+  const getHourLabel = (hourTime) => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const [hourNum] = hourTime.split(':');
+    const hour24 = parseInt(hourNum);
+
+    if (hour24 === currentHour) {
+      return 'Now';
+    }
+
+    // Convert to 12-hour format
+    const hour12 = hour24 % 12 || 12;
+    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${hourTime.split(':')[1]} ${ampm}`;
   };
 
   return (
     <div
+      data-dark-mode={isDark}
       style={{
         minHeight: '100vh',
         background: 'transparent',
@@ -126,6 +202,23 @@ export default function App() {
       {/* Navigation */}
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} />
 
+      {/* Save Location Notification */}
+      <AnimatePresence>
+        {saveNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50"
+          >
+            <div className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3">
+              <span className="text-2xl">✅</span>
+              <p className="text-white font-semibold">Location saved successfully!</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Container with padding for navigation */}
       <div className="min-h-screen p-4 md:p-8 lg:pl-80 pt-24 lg:pt-8 pb-24 lg:pb-8">
         <div className="max-w-7xl mx-auto">
@@ -136,8 +229,7 @@ export default function App() {
             className="flex items-center justify-between mb-8"
           >
             <div>
-              <h1 className="text-5xl md:text-6xl font-bold text-white">Weather</h1>
-              <p className="text-white/60">Premium Dashboard</p>
+              <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '0 4px 6px rgba(0, 0, 0, 0.5)' }}>Weather</h1>
             </div>
 
             <motion.button
@@ -210,7 +302,7 @@ export default function App() {
                         </div>
                         {weather.icon && (
                           <motion.img
-                            src={weather.icon}
+                            src={getCustomWeatherIcon(weather.code, weather.temp, getBackgroundType(weather.code))}
                             alt={weather.condition}
                             className="w-32 h-32 icon-bounce"
                             initial={{ opacity: 0, scale: 0.8 }}
@@ -228,31 +320,44 @@ export default function App() {
                         <p className="text-xl text-white/60">Feels like {weather.feelsLike}°C</p>
                       </div>
 
-                      {/* Weather Condition Highlight */}
+                      {/* Weather Condition & Save Location - Single Block */}
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="p-6 rounded-2xl mb-6"
+                        className="p-6 rounded-2xl mb-6 flex items-center justify-between gap-6"
                         style={{
                           background: `linear-gradient(135deg, ${theme.primary}30, ${theme.secondary}30)`,
                           border: `2px solid ${theme.primary}60`,
                         }}
                       >
-                        <p className="text-center text-3xl md:text-4xl font-bold text-white">
-                          {weather.condition}
-                        </p>
-                      </motion.div>
+                        {/* Left: Weather Condition */}
+                        <div className="flex-1">
+                          <p className="text-3xl md:text-4xl font-bold text-white">
+                            {weather.condition}
+                          </p>
+                        </div>
 
-                      {/* Save Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSaveLocation}
-                        className="w-full py-3 rounded-2xl glass-card hover:bg-white/20 transition-all font-semibold text-lg"
-                      >
-                        ⭐ Save Location
-                      </motion.button>
+                        {/* Right: Save Button */}
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleSaveLocation}
+                          className="px-6 py-3 rounded-xl font-semibold text-lg whitespace-nowrap"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            color: 'white',
+                            transition: 'all 0.3s ease',
+                          }}
+                          onHover={{
+                            background: 'rgba(255, 255, 255, 0.3)',
+                          }}
+                        >
+                          ⭐ Save Location
+                        </motion.button>
+                      </motion.div>
                     </motion.div>
 
                     {/* Metrics Grid */}
@@ -298,21 +403,31 @@ export default function App() {
                       <h3 className="text-2xl font-bold text-white mb-6">Hourly Forecast</h3>
                       <div className="overflow-x-auto pb-2 scrollbar-hide">
                         <div className="flex gap-3 min-w-max">
-                          {hourlyData.slice(0, 12).map((hour, idx) => (
-                            <motion.div
-                              key={idx}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.02 }}
-                              className="flex flex-col items-center gap-2 p-3 rounded-xl flex-shrink-0 w-20 glass-card hover:bg-white/15 transition-all"
-                            >
-                              <span className="text-xs font-semibold text-white/70">
-                                {new Date(hour.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              {hour.icon && <img src={hour.icon} alt="" className="w-8 h-8" />}
-                              <span className="text-sm font-bold text-white">{Math.round(hour.temp)}°</span>
-                            </motion.div>
-                          ))}
+                          {getFilteredHourlyData().map((hour, idx) => {
+                            const hourTime = hour.time.split(' ')[1];
+                            const label = getHourLabel(hourTime);
+                            const isNow = label === 'Now';
+
+                            return (
+                              <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.02 }}
+                                className={`flex flex-col items-center gap-2 p-3 rounded-xl flex-shrink-0 w-20 transition-all ${
+                                  isNow
+                                    ? 'glass-card bg-white/20 border-2 border-white/40'
+                                    : 'glass-card hover:bg-white/15'
+                                }`}
+                              >
+                                <span className={`text-xs font-semibold ${isNow ? 'text-white font-bold' : 'text-white/70'}`}>
+                                  {label}
+                                </span>
+                                {hour.code && <img src={getCustomWeatherIcon(hour.code, hour.temp, getBackgroundType(hour.code))} alt="" className="w-8 h-8" />}
+                                <span className="text-sm font-bold text-white">{Math.round(hour.temp)}°</span>
+                              </motion.div>
+                            );
+                          })}
                         </div>
                       </div>
                     </motion.div>
@@ -345,7 +460,7 @@ export default function App() {
                               <span className="text-sm font-semibold text-white">
                                 {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                               </span>
-                              {day.icon && <img src={day.icon} alt="" className="w-6 h-6" />}
+                              {day.code && <img src={getCustomWeatherIcon(day.code, day.maxTemp, getBackgroundType(day.code))} alt="" className="w-6 h-6" />}
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
@@ -383,33 +498,72 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card rounded-3xl p-8"
+                  className="space-y-6"
                 >
-                  <h2 className="text-3xl font-bold text-white mb-8">📍 Saved Locations</h2>
-                  {savedLocations.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {savedLocations.map((loc, idx) => (
-                        <motion.button
-                          key={idx}
-                          onClick={() => {
-                            fetchWeather(loc.city);
-                            setActiveTab('dashboard');
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="p-6 rounded-2xl glass-card hover:bg-white/20 transition-all text-left"
-                        >
-                          <p className="font-bold text-white text-lg">{loc.city}</p>
-                          <p className="text-sm text-white/60">{loc.country}</p>
-                        </motion.button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <p className="text-white/60 text-lg">No saved locations yet. Add one from the dashboard!</p>
-                    </div>
+                  {/* Saved Locations Grid */}
+                  <motion.div
+                    className="glass-card rounded-3xl p-8"
+                  >
+                    <h2 className="text-3xl font-bold text-white mb-8">📍 Saved Locations</h2>
+                    {savedLocations.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {savedLocations.map((loc, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="p-6 rounded-2xl glass-card hover:bg-white/20 transition-all group"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <p className="font-bold text-white text-lg">{loc.city}</p>
+                                <p className="text-sm text-white/60">{loc.country}</p>
+                              </div>
+                              <motion.button
+                                onClick={() => {
+                                  const updated = savedLocations.filter((l) => l.city !== loc.city);
+                                  setSavedLocations(updated);
+                                  localStorage.setItem('savedLocations', JSON.stringify(updated));
+                                }}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
+                              >
+                                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </motion.button>
+                            </div>
+                            <motion.button
+                              onClick={() => {
+                                fetchWeather(loc.city);
+                                setActiveTab('dashboard');
+                              }}
+                              whileHover={{ scale: 1.02 }}
+                              className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-semibold text-white"
+                            >
+                              View Weather
+                            </motion.button>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-white/60 text-lg">No saved locations yet. Add one from the dashboard!</p>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* Map Section */}
+                  {savedLocations.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <RealWorldMap weather={weather} theme={theme} isDark={isDark} />
+                    </motion.div>
                   )}
                 </motion.div>
               )}

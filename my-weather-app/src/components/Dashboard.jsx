@@ -84,9 +84,6 @@ export default function Dashboard() {
             <h1 className={`text-4xl font-bold ${currentTheme.primary}`}>
               Weather OS
             </h1>
-            <p className={`text-sm ${currentTheme.secondary} mt-1`}>
-              Premium Dashboard
-            </p>
           </div>
 
           {/* Theme Toggle */}

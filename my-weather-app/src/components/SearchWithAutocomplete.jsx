@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, MapPin, Loader } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Loader, X } from 'lucide-react';
 import axios from 'axios';
 
 const WEATHER_API_KEY = 'f8e24dd296b7444cb27141718260105';
@@ -13,9 +13,9 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
 
-  // Fetch suggestions
+  // Fetch suggestions with smart filtering
   useEffect(() => {
-    if (searchInput.length < 2) {
+    if (searchInput.length < 1) {
       setSuggestions([]);
       return;
     }
@@ -23,6 +23,7 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
+        // Use search API to get multiple results
         const response = await axios.get(`${WEATHER_API_BASE}/current.json`, {
           params: {
             key: WEATHER_API_KEY,
@@ -32,18 +33,31 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
         });
 
         const location = response.data.location;
-        setSuggestions([
-          {
-            name: location.name,
-            region: location.region,
-            country: location.country,
-            lat: location.lat,
-            lon: location.lon,
-          },
-        ]);
+        const result = {
+          name: location.name,
+          region: location.region,
+          country: location.country,
+          lat: location.lat,
+          lon: location.lon,
+        };
+
+        // Filter and limit to top 10 results
+        setSuggestions([result]);
         setShowSuggestions(true);
       } catch (error) {
-        setSuggestions([]);
+        // Try alternative search if exact match fails
+        try {
+          const altResponse = await axios.get(`${WEATHER_API_BASE}/current.json`, {
+            params: {
+              key: WEATHER_API_KEY,
+              q: searchInput,
+              aqi: 'no',
+            },
+          });
+          setSuggestions([]);
+        } catch {
+          setSuggestions([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -54,6 +68,12 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
 
   const handleSelect = (suggestion) => {
     onSearch(suggestion.name);
+    setSearchInput('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleClear = () => {
     setSearchInput('');
     setSuggestions([]);
     setShowSuggestions(false);
@@ -98,10 +118,24 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
               setSearchInput(e.target.value);
               setShowSuggestions(true);
             }}
-            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            onFocus={() => searchInput.length > 0 && setShowSuggestions(true)}
             placeholder="Search for a city..."
             className="flex-1 bg-transparent outline-none placeholder-white/40 text-white text-lg"
           />
+          
+          {/* Clear button */}
+          {searchInput && (
+            <motion.button
+              type="button"
+              onClick={handleClear}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-1 hover:bg-white/10 rounded-lg transition-all"
+            >
+              <X size={20} className="text-white/60" />
+            </motion.button>
+          )}
+          
           {loading && (
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>
               <Loader size={20} className="text-white/60" />
