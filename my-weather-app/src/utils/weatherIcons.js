@@ -1,66 +1,71 @@
 // Map weather codes to background images
-const getBackgroundType = (weatherCode) => {
+const getBackgroundType = (weatherCode, isDay) => {
   // Clear/Sunny weather
   if (weatherCode === 1000) {
-    return 'sunny';
+    return isDay ? 'sunny' : 'night-clear';
   }
   // Partly cloudy (basant-panchami-cloud)
   else if (weatherCode === 1003 || weatherCode === 1006) {
-    return 'basant-panchami';
+    return isDay ? 'basant-panchami' : 'night-cloudy';
   }
   // Overcast
   else if (weatherCode === 1009) {
-    return 'dark-cloud';
+    return isDay ? 'dark-cloud' : 'night-overcast';
   }
   // Mist/Fog
   else if (weatherCode === 1030 || weatherCode === 1135) {
-    return 'mist';
+    return isDay ? 'mist' : 'night-fog';
   }
   // Rainy
   else if (weatherCode >= 1063 && weatherCode <= 1195) {
-    return 'rainy';
+    return isDay ? 'rainy' : 'night-rainy';
   }
   // Snowy
   else if (weatherCode >= 1204 && weatherCode <= 1252) {
-    return 'snowy';
+    return isDay ? 'snowy' : 'night-snowy';
   }
   // Stormy/Thunderstorm
   else if (weatherCode >= 1273 && weatherCode <= 1282) {
-    return 'stormy';
+    return isDay ? 'stormy' : 'night-stormy';
   }
   // Winter rain
   else if (weatherCode >= 1150 && weatherCode <= 1201) {
-    return 'winter-rainy';
+    return isDay ? 'winter-rainy' : 'night-winter-rainy';
   }
   // Default fallback
-  return 'sunny';
+  return isDay ? 'sunny' : 'night-clear';
 };
 
 // Map weather codes to custom icon images
-export const getCustomWeatherIcon = (weatherCode, temp, backgroundType) => {
+export const getCustomWeatherIcon = (weatherCode, temp, backgroundType = '', isDay = true) => {
   // Clear/Sunny weather (1000)
   if (weatherCode === 1000) {
-    return '/src/assets/sun-icon.png';
+    return isDay ? '/src/assets/sun-icon.png' : '/src/assets/moon-icon.png';
   }
   
   // Partly cloudy (1003, 1006)
   if (weatherCode === 1003 || weatherCode === 1006) {
-    // Use cloud-icon only for basant-panchami background
-    if (backgroundType === 'basant-panchami') {
-      return '/src/assets/cloud-icon.png';
+    if (isDay) {
+      // Day: Use cloud-icon only for basant-panchami background
+      if (backgroundType === 'basant-panchami') {
+        return '/src/assets/cloud-icon.png';
+      }
+      // Day: Use cloud-icon2 for other cloudy backgrounds
+      return '/src/assets/cloud-icon2.png';
+    } else {
+      // Night: use moon icon
+      return '/src/assets/moon-icon.png';
     }
-    // Use cloud-icon2 for other cloudy backgrounds
-    return '/src/assets/cloud-icon2.png';
   }
   
   // Overcast (1009)
   if (weatherCode === 1009) {
-    return '/src/assets/cloud-icon2.png';
+    return isDay ? '/src/assets/cloud-icon2.png' : '/src/assets/moon-icon.png';
   }
   
   // Mist/Fog (1030, 1135)
   if (weatherCode === 1030 || weatherCode === 1135) {
-    return '/src/assets/cloud-icon2.png';
+    return isDay ? '/src/assets/cloud-icon2.png' : '/src/assets/moon-icon.png';
   }
   
   // Rainy weather (1063-1195)
@@ -87,14 +92,8 @@ export const getCustomWeatherIcon = (weatherCode, temp, backgroundType) => {
     return '/src/assets/winter-rain-icon.png';
   }
   
-  // Night conditions - use moon icon
-  if (weatherCode === 1003 || weatherCode === 1006) {
-    // Check if it's night (you can pass isDark or check time)
-    return '/src/assets/moon-icon.png';
-  }
-  
   // Default fallback
-  return '/src/assets/sun-icon.png';
+  return isDay ? '/src/assets/sun-icon.png' : '/src/assets/moon-icon.png';
 };
 
 // Get icon based on weather condition and temperature

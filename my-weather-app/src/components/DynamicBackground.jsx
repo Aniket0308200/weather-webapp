@@ -2,54 +2,54 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // Map weather codes to background images
-const getBackgroundImage = (weatherCode) => {
+const getBackgroundImage = (weatherCode, isDay) => {
   // Clear/Sunny weather
   if (weatherCode === 1000) {
-    return 'url(/src/assets/cloud-for-sun.jpg)';
+    return isDay ? 'url(/src/assets/cloud-for-sun.jpg)' : 'url(/src/assets/cloud-for-night.jpg)';
   }
   // Partly cloudy
   else if (weatherCode === 1003 || weatherCode === 1006) {
-    return 'url(/src/assets/basant-panchami-cloud.jpg)';
+    return isDay ? 'url(/src/assets/basant-panchami-cloud.jpg)' : 'url(/src/assets/cloud-for-night.jpg)';
   }
   // Overcast
   else if (weatherCode === 1009) {
-    return 'url(/src/assets/dark-cloud.jpg)';
+    return isDay ? 'url(/src/assets/dark-cloud.jpg)' : 'url(/src/assets/more-cloud-for-night.jpg)';
   }
   // Mist/Fog
   else if (weatherCode === 1030 || weatherCode === 1135) {
-    return 'url(/src/assets/more-cloud-for-night.jpg)';
+    return isDay ? 'url(/src/assets/more-cloud-for-night.jpg)' : 'url(/src/assets/more-cloud-for-night.jpg)';
   }
   // Rainy
   else if (weatherCode >= 1063 && weatherCode <= 1195) {
-    return 'url(/src/assets/rainy-cloud.jpg)';
+    return isDay ? 'url(/src/assets/rainy-cloud.jpg)' : 'url(/src/assets/more-cloud-for-night.jpg)';
   }
   // Snowy
   else if (weatherCode >= 1204 && weatherCode <= 1252) {
-    return 'url(/src/assets/snowflack-cloud.jpg)';
+    return isDay ? 'url(/src/assets/snowflack-cloud.jpg)' : 'url(/src/assets/winter-cloud.jpg)';
   }
   // Stormy/Thunderstorm
   else if (weatherCode >= 1273 && weatherCode <= 1282) {
-    return 'url(/src/assets/cloud-thanderstroom.jpg)';
+    return isDay ? 'url(/src/assets/cloud-thanderstroom.jpg)' : 'url(/src/assets/more-cloud-for-night.jpg)';
   }
   // Winter rain
   else if (weatherCode >= 1150 && weatherCode <= 1201) {
-    return 'url(/src/assets/winter-rainy-cloud.jpg)';
+    return isDay ? 'url(/src/assets/winter-rainy-cloud.jpg)' : 'url(/src/assets/winter-cloud.jpg)';
   }
   // Default fallback
-  return 'url(/src/assets/cloud-for-sun.jpg)';
+  return isDay ? 'url(/src/assets/cloud-for-sun.jpg)' : 'url(/src/assets/cloud-for-night.jpg)';
 };
 
-export default function DynamicBackground({ weatherCode, isDark }) {
+export default function DynamicBackground({ weatherCode, isDark, isDay }) {
   const [raindrops, setRaindrops] = useState([]);
   const [snowflakes, setSnowflakes] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [backgroundImage, setBackgroundImage] = useState('url(/src/assets/cloud-for-sun.jpg)');
 
-  // Determine background image based on weather code
+  // Determine background image based on weather code and day/night
   useEffect(() => {
-    const bgImage = getBackgroundImage(weatherCode);
+    const bgImage = getBackgroundImage(weatherCode, isDay);
     setBackgroundImage(bgImage);
-  }, [weatherCode]);
+  }, [weatherCode, isDay]);
 
   // Generate raindrops for rainy weather
   useEffect(() => {

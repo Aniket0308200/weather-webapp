@@ -109,8 +109,9 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
       className="relative w-full mb-5"
     >
       <form onSubmit={handleSubmit} className="relative">
-        <div className="glass-card flex items-center gap-3 px-6 py-4 rounded-organic-lg">
-          <SearchIcon size={20} className="text-white/60" />
+        <div className="glass-card flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 sm:py-4 rounded-organic-lg">
+          <SearchIcon size={20} className="text-white/60 flex-shrink-0" />
+          
           <input
             type="text"
             value={searchInput}
@@ -120,7 +121,7 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
             }}
             onFocus={() => searchInput.length > 0 && setShowSuggestions(true)}
             placeholder="Search for a city..."
-            className="flex-1 bg-transparent outline-none placeholder-white/40 text-white text-lg"
+            className="flex-1 bg-transparent outline-none placeholder-white/40 text-white text-sm sm:text-base md:text-lg min-w-0"
           />
           
           {/* Clear button */}
@@ -130,20 +131,21 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
               onClick={handleClear}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1 hover:bg-white/10 rounded-lg transition-all"
+              className="p-1 hover:bg-white/10 rounded-lg transition-all flex-shrink-0"
             >
               <X size={20} className="text-white/60" />
             </motion.button>
           )}
           
           {loading && (
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="flex-shrink-0">
               <Loader size={20} className="text-white/60" />
             </motion.div>
           )}
+          
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-sm font-semibold"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm font-semibold flex-shrink-0 whitespace-nowrap"
           >
             Search
           </button>

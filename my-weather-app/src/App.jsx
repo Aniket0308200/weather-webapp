@@ -25,6 +25,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [saveNotification, setSaveNotification] = useState(false);
   const [, setUpdateTrigger] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Update hourly forecast every minute to reflect "Now" label changes
   useEffect(() => {
@@ -78,15 +79,23 @@ export default function App() {
         sunset: forecast[0].astro.sunset,
         moonrise: forecast[0].astro.moonrise,
         moonset: forecast[0].astro.moonset,
+        isDay: current.is_day,
       });
 
-      const hourly = forecast[0].hour.map((h) => ({
-        time: h.time,
-        temp: h.temp_c,
-        code: h.condition.code,
-        precipitation: h.chance_of_rain,
-        icon: h.condition.icon,
-      }));
+      const hourly = [];
+      // Collect hourly data from all forecast days to have enough hours
+      forecast.forEach((day) => {
+        day.hour.forEach((h) => {
+          hourly.push({
+            time: h.time,
+            temp: h.temp_c,
+            code: h.condition.code,
+            precipitation: h.chance_of_rain,
+            icon: h.condition.icon,
+            isDay: h.is_day,
+          });
+        });
+      });
       setHourlyData(hourly);
 
       const daily = forecast.map((d) => ({
@@ -100,7 +109,7 @@ export default function App() {
       }));
       setDailyData(daily);
 
-      const newTheme = getThemeByWeatherCode(current.condition.code);
+      const newTheme = getThemeByWeatherCode(current.condition.code, current.is_day);
       setTheme(newTheme);
     } catch (err) {
       setError('Failed to fetch weather. Please try again.');
@@ -127,6 +136,13 @@ export default function App() {
     }
   };
 
+  const handleDeleteLocation = (cityName) => {
+    const updated = savedLocations.filter((l) => l.city !== cityName);
+    setSavedLocations(updated);
+    localStorage.setItem('savedLocations', JSON.stringify(updated));
+    setDeleteConfirm(null);
+  };
+
   // Get filtered hourly data for 24-hour cycle starting from current time
   const getFilteredHourlyData = () => {
     if (!hourlyData || hourlyData.length === 0) return [];
@@ -150,21 +166,18 @@ export default function App() {
 
     filtered.push(...todayHours);
 
-    // Step 2: If we don't have 24 hours yet, add hours from tomorrow
+    // Step 2: If we don't have 24 hours yet, add hours from tomorrow and beyond
     if (filtered.length < 24) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowDate = tomorrow.toISOString().split('T')[0];
-      
       const hoursNeeded = 24 - filtered.length;
-      const tomorrowHours = hourlyData
-        .filter((hour) => {
-          const hourDate = hour.time.split(' ')[0];
-          return hourDate === tomorrowDate;
-        })
-        .slice(0, hoursNeeded);
+      
+      // Get all hours after today
+      const futureHours = hourlyData.filter((hour) => {
+        const hourDate = hour.time.split(' ')[0];
+        return hourDate > currentDate;
+      });
 
-      filtered.push(...tomorrowHours);
+      // Add only the hours we need
+      filtered.push(...futureHours.slice(0, hoursNeeded));
     }
 
     return filtered.slice(0, 24); // Ensure exactly 24 hours
@@ -197,7 +210,7 @@ export default function App() {
         transition: 'background 1s ease-in-out',
       }}
     >
-      <DynamicBackground weatherCode={weather?.code} isDark={isDark} />
+      <DynamicBackground weatherCode={weather?.code} isDark={isDark} isDay={weather?.isDay} />
 
       {/* Navigation */}
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} />
@@ -209,36 +222,89 @@ export default function App() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50"
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-2 sm:px-0"
           >
-            <div className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3">
-              <span className="text-2xl">✅</span>
-              <p className="text-white font-semibold">Location saved successfully!</p>
+            <div className="glass-card px-3 sm:px-6 py-3 sm:py-4 rounded-2xl flex items-center gap-2 sm:gap-3 max-w-md sm:max-w-sm">
+              <span className="text-xl sm:text-2xl flex-shrink-0">✅</span>
+              <p className="text-white font-semibold text-sm sm:text-base">Location saved successfully!</p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card rounded-3xl p-6 sm:p-8 max-w-sm w-full"
+            >
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Delete Location?</h3>
+              <p className="text-white/70 text-sm sm:text-base mb-6">
+                Are you sure you want to delete <span className="font-semibold text-white">{deleteConfirm}</span> from your saved locations?
+              </p>
+              <div className="flex gap-3 sm:gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                  }}
+                >
+                  No, Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleDeleteLocation(deleteConfirm)}
+                  className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all text-white"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.3)',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                  }}
+                >
+                  Yes, Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Container with padding for navigation */}
-      <div className="min-h-screen p-4 md:p-8 lg:pl-80 pt-24 lg:pt-8 pb-24 lg:pb-8">
+      <div className="min-h-screen p-2 sm:p-4 md:p-8 lg:pl-80 pt-4 sm:pt-24 lg:pt-20 pb-20 sm:pb-24 lg:pb-8">
         <div className="max-w-7xl mx-auto">
           {/* Header with Search and Toggle */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-8"
+            className="flex items-center justify-between mb-6 md:mx-0 mx-2 sm:mb-8"
           >
             <div>
-              <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '0 4px 6px rgba(0, 0, 0, 0.5)' }}>Weather</h1>
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '0 4px 6px rgba(0, 0, 0, 0.5)' }}>Weather</h1>
             </div>
 
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsDark(!isDark)}
-              className="p-4 rounded-full glass-card hover:bg-white/20 transition-all"
+              className="p-2 sm:p-4 rounded-full glass-card hover:bg-white/20 transition-all"
             >
-              {isDark ? <Sun size={28} /> : <Moon size={28} />}
+              {isDark ? <Sun size={24} className="sm:w-7 sm:h-7" /> : <Moon size={24} className="sm:w-7 sm:h-7" />}
             </motion.button>
           </motion.div>
 
@@ -290,21 +356,21 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="glass-card rounded-3xl p-8 md:p-12"
+                      className="glass-card rounded-3xl p-4 sm:p-8 md:p-12"
                     >
-                      <div className="flex items-start justify-between mb-8">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <MapPin size={28} className="text-white" />
-                            <h2 className="text-5xl md:text-6xl font-bold text-white">{weather.city}</h2>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                            <MapPin size={24} className="sm:w-7 sm:h-7 text-white" />
+                            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white">{weather.city}</h2>
                           </div>
-                          <p className="text-white/60 text-lg ml-11">{weather.country}</p>
+                          <p className="text-white/60 text-sm sm:text-lg ml-8 sm:ml-11">{weather.country}</p>
                         </div>
                         {weather.icon && (
                           <motion.img
-                            src={getCustomWeatherIcon(weather.code, weather.temp, getBackgroundType(weather.code))}
+                            src={getCustomWeatherIcon(weather.code, weather.temp, getBackgroundType(weather.code, weather.isDay), weather.isDay)}
                             alt={weather.condition}
-                            className="w-32 h-32 icon-bounce"
+                            className="w-24 sm:w-32 h-24 sm:h-32 icon-bounce"
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 }}
@@ -312,12 +378,12 @@ export default function App() {
                         )}
                       </div>
 
-                      <div className="mb-8">
-                        <div className="flex items-baseline gap-4 mb-4">
-                          <span className="text-9xl font-bold text-white">{weather.temp}</span>
-                          <span className="text-5xl text-white/70">°C</span>
+                      <div className="mb-6 sm:mb-8">
+                        <div className="flex items-baseline gap-2 sm:gap-4 mb-2 sm:mb-4">
+                          <span className="text-6xl sm:text-9xl font-bold text-white">{weather.temp}</span>
+                          <span className="text-3xl sm:text-5xl text-white/70">°C</span>
                         </div>
-                        <p className="text-xl text-white/60">Feels like {weather.feelsLike}°C</p>
+                        <p className="text-base sm:text-xl text-white/60">Feels like {weather.feelsLike}°C</p>
                       </div>
 
                       {/* Weather Condition & Save Location - Single Block */}
@@ -325,7 +391,7 @@ export default function App() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="p-6 rounded-2xl mb-6 flex items-center justify-between gap-6"
+                        className="p-4 sm:p-6 rounded-2xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                         style={{
                           background: `linear-gradient(135deg, ${theme.primary}30, ${theme.secondary}30)`,
                           border: `2px solid ${theme.primary}60`,
@@ -333,7 +399,7 @@ export default function App() {
                       >
                         {/* Left: Weather Condition */}
                         <div className="flex-1">
-                          <p className="text-3xl md:text-4xl font-bold text-white">
+                          <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                             {weather.condition}
                           </p>
                         </div>
@@ -343,7 +409,7 @@ export default function App() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={handleSaveLocation}
-                          className="px-6 py-3 rounded-xl font-semibold text-lg whitespace-nowrap"
+                          className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-lg whitespace-nowrap w-full sm:w-auto"
                           style={{
                             background: 'rgba(255, 255, 255, 0.2)',
                             backdropFilter: 'blur(10px)',
@@ -365,7 +431,7 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                      className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4"
                     >
                       {[
                         { icon: Droplets, label: 'Humidity', value: `${weather.humidity}%`, color: '#3b82f6' },
@@ -398,11 +464,11 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="glass-card rounded-3xl p-6"
+                      className="glass-card rounded-3xl p-4 sm:p-6"
                     >
-                      <h3 className="text-2xl font-bold text-white mb-6">Hourly Forecast</h3>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Hourly Forecast</h3>
                       <div className="overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="flex gap-3 min-w-max">
+                        <div className="flex gap-2 sm:gap-3 min-w-max">
                           {getFilteredHourlyData().map((hour, idx) => {
                             const hourTime = hour.time.split(' ')[1];
                             const label = getHourLabel(hourTime);
@@ -414,7 +480,7 @@ export default function App() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.02 }}
-                                className={`flex flex-col items-center gap-2 p-3 rounded-xl flex-shrink-0 w-20 transition-all ${
+                                className={`flex flex-col items-center gap-3 sm:gap-2 p-2 sm:p-3 rounded-xl flex-shrink-0 w-18 sm:w-20 transition-all ${
                                   isNow
                                     ? 'glass-card bg-white/20 border-2 border-white/40'
                                     : 'glass-card hover:bg-white/15'
@@ -423,8 +489,8 @@ export default function App() {
                                 <span className={`text-xs font-semibold ${isNow ? 'text-white font-bold' : 'text-white/70'}`}>
                                   {label}
                                 </span>
-                                {hour.code && <img src={getCustomWeatherIcon(hour.code, hour.temp, getBackgroundType(hour.code))} alt="" className="w-8 h-8" />}
-                                <span className="text-sm font-bold text-white">{Math.round(hour.temp)}°</span>
+                                {hour.code && <img src={getCustomWeatherIcon(hour.code, hour.temp, '', hour.isDay !== undefined ? hour.isDay : true)} alt="" className="w-6 sm:w-8 h-6 sm:h-8" />}
+                                <span className="text-xs sm:text-sm font-bold text-white">{Math.round(hour.temp)}°</span>
                               </motion.div>
                             );
                           })}
@@ -442,25 +508,25 @@ export default function App() {
                   >
                     {/* 7-Day Forecast Card */}
                     <motion.div
-                      className="glass-card rounded-3xl p-6"
+                      className="glass-card rounded-3xl p-4 sm:p-6 h-64 sm:h-96 md:h-auto flex flex-col"
                     >
-                      <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2 flex-shrink-0">
                         <span>📅</span> 7-Day Forecast
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3 overflow-y-auto scrollbar-hide flex-1">
                         {dailyData.slice(0, 7).map((day, idx) => (
                           <motion.div
                             key={idx}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="p-4 rounded-xl glass-card hover:bg-white/15 transition-all border border-white/10 hover:border-white/20"
+                            className="p-3 sm:p-4 rounded-xl glass-card hover:bg-white/15 transition-all border border-white/10 hover:border-white/20 flex-shrink-0"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm font-semibold text-white">
+                            <div className="flex items-center justify-between mb-2 sm:mb-3">
+                              <span className="text-xs sm:text-sm font-semibold text-white">
                                 {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                               </span>
-                              {day.code && <img src={getCustomWeatherIcon(day.code, day.maxTemp, getBackgroundType(day.code))} alt="" className="w-6 h-6" />}
+                              {day.code && <img src={getCustomWeatherIcon(day.code, day.maxTemp, getBackgroundType(day.code, weather.isDay), weather.isDay)} alt="" className="w-5 sm:w-6 h-5 sm:h-6" />}
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
@@ -498,39 +564,35 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="space-y-6"
+                  className="space-y-4 sm:space-y-6"
                 >
                   {/* Saved Locations Grid */}
                   <motion.div
-                    className="glass-card rounded-3xl p-8"
+                    className="glass-card rounded-3xl p-4 sm:p-8"
                   >
-                    <h2 className="text-3xl font-bold text-white mb-8">📍 Saved Locations</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-8">📍 Saved Locations</h2>
                     {savedLocations.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {savedLocations.map((loc, idx) => (
                           <motion.div
                             key={idx}
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="p-6 rounded-2xl glass-card hover:bg-white/20 transition-all group"
+                            className="p-4 sm:p-6 rounded-2xl glass-card hover:bg-white/20 transition-all group"
                           >
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1">
-                                <p className="font-bold text-white text-lg">{loc.city}</p>
-                                <p className="text-sm text-white/60">{loc.country}</p>
+                            <div className="flex items-start justify-between mb-3 sm:mb-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-white text-base sm:text-lg truncate">{loc.city}</p>
+                                <p className="text-xs sm:text-sm text-white/60 truncate">{loc.country}</p>
                               </div>
                               <motion.button
-                                onClick={() => {
-                                  const updated = savedLocations.filter((l) => l.city !== loc.city);
-                                  setSavedLocations(updated);
-                                  localStorage.setItem('savedLocations', JSON.stringify(updated));
-                                }}
+                                onClick={() => setDeleteConfirm(loc.city)}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
+                                className="p-1 sm:p-2 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-red-500/20 flex-shrink-0 ml-2"
                               >
-                                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-4 sm:w-5 h-4 sm:h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                               </motion.button>
@@ -541,7 +603,7 @@ export default function App() {
                                 setActiveTab('dashboard');
                               }}
                               whileHover={{ scale: 1.02 }}
-                              className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-semibold text-white"
+                              className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm font-semibold text-white"
                             >
                               View Weather
                             </motion.button>
@@ -574,28 +636,28 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card rounded-3xl p-8"
+                  className="glass-card rounded-3xl p-4 sm:p-8"
                 >
-                  <h2 className="text-3xl font-bold text-white mb-8">⚙️ Settings</h2>
-                  <div className="space-y-6">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-8">⚙️ Settings</h2>
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Theme Toggle */}
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="flex items-center justify-between p-6 rounded-2xl glass-card hover:bg-white/15 transition-all"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 rounded-2xl glass-card hover:bg-white/15 transition-all gap-4"
                     >
                       <div>
-                        <p className="text-lg font-semibold text-white">Dark Mode</p>
-                        <p className="text-sm text-white/60">Toggle between light and dark themes</p>
+                        <p className="text-base sm:text-lg font-semibold text-white">Dark Mode</p>
+                        <p className="text-xs sm:text-sm text-white/60">Toggle between light and dark themes</p>
                       </div>
                       <motion.button
                         onClick={() => setIsDark(!isDark)}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        className="p-3 rounded-full glass-card hover:bg-white/20 transition-all"
+                        className="p-2 sm:p-3 rounded-full glass-card hover:bg-white/20 transition-all"
                       >
-                        {isDark ? <Sun size={24} /> : <Moon size={24} />}
+                        {isDark ? <Sun size={20} className="sm:w-6 sm:h-6" /> : <Moon size={20} className="sm:w-6 sm:h-6" />}
                       </motion.button>
                     </motion.div>
 
@@ -604,13 +666,13 @@ export default function App() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="flex items-center justify-between p-6 rounded-2xl glass-card hover:bg-white/15 transition-all"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 rounded-2xl glass-card hover:bg-white/15 transition-all gap-4"
                     >
                       <div>
-                        <p className="text-lg font-semibold text-white">Temperature Unit</p>
-                        <p className="text-sm text-white/60">Currently set to Celsius (°C)</p>
+                        <p className="text-base sm:text-lg font-semibold text-white">Temperature Unit</p>
+                        <p className="text-xs sm:text-sm text-white/60">Currently set to Celsius (°C)</p>
                       </div>
-                      <span className="text-2xl font-bold text-white">°C</span>
+                      <span className="text-xl sm:text-2xl font-bold text-white">°C</span>
                     </motion.div>
 
                     {/* Default Location */}
@@ -618,13 +680,13 @@ export default function App() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="flex items-center justify-between p-6 rounded-2xl glass-card hover:bg-white/15 transition-all"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 rounded-2xl glass-card hover:bg-white/15 transition-all gap-4"
                     >
                       <div>
-                        <p className="text-lg font-semibold text-white">Default Location</p>
-                        <p className="text-sm text-white/60">{weather?.city || 'Delhi'}</p>
+                        <p className="text-base sm:text-lg font-semibold text-white">Default Location</p>
+                        <p className="text-xs sm:text-sm text-white/60">{weather?.city || 'Delhi'}</p>
                       </div>
-                      <span className="text-sm font-semibold text-white/60">Set</span>
+                      <span className="text-xs sm:text-sm font-semibold text-white/60">Set</span>
                     </motion.div>
 
                     {/* About */}
@@ -632,10 +694,10 @@ export default function App() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="p-6 rounded-2xl glass-card"
+                      className="p-4 sm:p-6 rounded-2xl glass-card"
                     >
-                      <p className="text-lg font-semibold text-white mb-2">About</p>
-                      <p className="text-sm text-white/60">Premium Weather Dashboard v1.0</p>
+                      <p className="text-base sm:text-lg font-semibold text-white mb-2">About</p>
+                      <p className="text-xs sm:text-sm text-white/60">Premium Weather Dashboard v1.0</p>
                       <p className="text-xs text-white/40 mt-2">Powered by WeatherAPI.com</p>
                     </motion.div>
                   </div>
