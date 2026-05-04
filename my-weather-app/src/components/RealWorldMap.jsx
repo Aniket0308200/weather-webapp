@@ -111,7 +111,7 @@ export default function RealWorldMap({ weather, theme, isDark, onLocationClick }
     setIsLoadingLocation(true);
     try {
       const response = await fetch(
-        `https://api.weatherapi.com/v1/forecast.json?key=f8e24dd296b7444cb27141718260105&q=${clickedLocation.lat},${clickedLocation.lng}&days=7&aqi=yes`
+        `/api/weather/forecast.json?key=f8e24dd296b7444cb27141718260105&q=${clickedLocation.lat},${clickedLocation.lng}&days=7&aqi=yes`
       );
       const data = await response.json();
       

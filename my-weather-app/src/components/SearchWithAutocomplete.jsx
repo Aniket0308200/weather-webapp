@@ -23,8 +23,8 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        // Use search API to get multiple results
-        const response = await axios.get(`${WEATHER_API_BASE}/current.json`, {
+        // Use proxy to avoid CORS issues on mobile
+        const response = await axios.get(`/api/weather/current.json`, {
           params: {
             key: WEATHER_API_KEY,
             q: searchInput,
@@ -47,7 +47,7 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
       } catch (error) {
         // Try alternative search if exact match fails
         try {
-          const altResponse = await axios.get(`${WEATHER_API_BASE}/current.json`, {
+          const altResponse = await axios.get(`/api/weather/current.json`, {
             params: {
               key: WEATHER_API_KEY,
               q: searchInput,
@@ -97,7 +97,11 @@ export default function SearchWithAutocomplete({ onSearch, theme }) {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   return (

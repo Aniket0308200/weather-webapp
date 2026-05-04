@@ -2,8 +2,9 @@ import { motion } from 'framer-motion';
 import { Cloud, MapPin, Settings, Home, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import WatchWidget from './WatchWidget';
 
-export default function Navigation({ activeTab, setActiveTab, theme }) {
+export default function Navigation({ activeTab, setActiveTab, theme, timezone }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -29,7 +30,7 @@ export default function Navigation({ activeTab, setActiveTab, theme }) {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-8 border-b border-white/10"
+          className="px-8 py-4 border-b border-white/10"
         >
           <div className="flex items-center gap-3 mb-2">
             <div
@@ -47,7 +48,7 @@ export default function Navigation({ activeTab, setActiveTab, theme }) {
         </motion.div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 p-6 space-y-3">
+        <nav className="flex-1 md:px-6 md:pt-3 md:pb-0 3xl:p-6 space-y-3">
           {navItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -100,13 +101,19 @@ export default function Navigation({ activeTab, setActiveTab, theme }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="p-6 border-t border-white/10"
+          // className="border-t border-white/10"
         >
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <p className="text-xs text-white/60 text-center">
-              <span className="block font-semibold text-white/80 mb-1">v1.0</span>
-              Powered by WeatherAPI
-            </p>
+          {/* Watch Widget */}
+          <WatchWidget timezone={timezone} />
+
+          {/* v1.0 card — below watch, separated by a line */}
+          <div className="mx-4 mt-4 mb-4 border-t border-white/10 pt-4">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-xs text-white/60 text-center">
+                <span className="block font-semibold text-white/80 mb-1">v1.0</span>
+                Powered by WeatherAPI
+              </p>
+            </div>
           </div>
         </motion.div>
       </motion.div>

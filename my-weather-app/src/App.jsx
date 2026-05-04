@@ -49,7 +49,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${WEATHER_API_BASE}/forecast.json`, {
+      const response = await axios.get(`/api/weather/forecast.json`, {
         params: {
           key: WEATHER_API_KEY,
           q: location,
@@ -265,7 +265,7 @@ export default function App() {
       <DynamicBackground weatherCode={weather?.code} isDark={isDark} isDay={weather?.isDay} />
 
       {/* Navigation */}
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} />
+      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} timezone={weather?.timezone} />
 
       {/* Save Location Notification */}
       <AnimatePresence>
