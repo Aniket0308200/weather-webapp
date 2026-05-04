@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,10 +12,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-export default function RealWorldMap({ weather, theme, isDark }) {
+export default function RealWorldMap({ weather, theme, isDark, onLocationClick }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
+  const [clickedLocation, setClickedLocation] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || !weather) return;
@@ -30,6 +33,13 @@ export default function RealWorldMap({ weather, theme, isDark }) {
         maxZoom: 19,
         tileSize: 256,
       }).addTo(mapInstanceRef.current);
+
+      // Add click event listener to map
+      mapInstanceRef.current.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        setClickedLocation({ lat, lng });
+        setShowConfirmation(true);
+      });
     }
 
     const map = mapInstanceRef.current;
@@ -40,9 +50,11 @@ export default function RealWorldMap({ weather, theme, isDark }) {
     }
 
     // Get coordinates from weather data
-    // Note: WeatherAPI doesn't provide lat/lon directly, so we'll use approximate coordinates
-    // In production, you'd want to use a geocoding API or store coordinates
-    const getCoordinates = (city) => {
+    let lat = weather.lat;
+    let lon = weather.lon;
+
+    // Fallback: if lat/lon not in weather object, try hardcoded list
+    if (!lat || !lon) {
       const coordinates = {
         'Delhi': [28.7041, 77.1025],
         'Mumbai': [19.0760, 72.8777],
@@ -65,10 +77,8 @@ export default function RealWorldMap({ weather, theme, isDark }) {
         'Hong Kong': [22.3193, 114.1694],
         'Los Angeles': [34.0522, -118.2437],
       };
-      return coordinates[city] || [20, 0];
-    };
-
-    const [lat, lon] = getCoordinates(weather.city);
+      [lat, lon] = coordinates[weather.city] || [20, 0];
+    }
 
     // Add new marker
     markerRef.current = L.marker([lat, lon], {
@@ -90,11 +100,34 @@ export default function RealWorldMap({ weather, theme, isDark }) {
     // Center map on location
     map.setView([lat, lon], 10);
 
-    // Cleanup function
     return () => {
       // Keep map instance for reuse
     };
   }, [weather]);
+
+  const handleConfirmLocation = async () => {
+    if (!clickedLocation) return;
+
+    setIsLoadingLocation(true);
+    try {
+      const response = await fetch(
+        `https://api.weatherapi.com/v1/forecast.json?key=f8e24dd296b7444cb27141718260105&q=${clickedLocation.lat},${clickedLocation.lng}&days=7&aqi=yes`
+      );
+      const data = await response.json();
+      
+      if (data.location) {
+        onLocationClick(data.location.name);
+        setShowConfirmation(false);
+        setClickedLocation(null);
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      setShowConfirmation(false);
+      setClickedLocation(null);
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
 
   if (!weather) {
     return (
@@ -109,44 +142,102 @@ export default function RealWorldMap({ weather, theme, isDark }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="glass-card rounded-3xl p-6 overflow-hidden"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <MapPin size={24} style={{ color: theme.primary }} />
-        <h3 className="text-2xl font-bold text-white">World Map</h3>
-      </div>
-
-      {/* Map Container */}
-      <div
-        ref={mapRef}
-        className="relative w-full rounded-2xl overflow-hidden border border-white/10"
-        style={{ height: '400px', zIndex: 1 }}
-      />
-
-      {/* Location Info */}
+    <>
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="grid grid-cols-3 gap-3 mt-6"
+        transition={{ delay: 0.2 }}
+        className="glass-card rounded-3xl p-6 overflow-hidden"
       >
-        <div className="glass-card rounded-xl p-3 text-center">
-          <p className="text-xs text-white/60 mb-1">Location</p>
-          <p className="text-sm font-bold text-white">{weather.city}</p>
+        <div className="flex items-center gap-3 mb-6">
+          <MapPin size={24} style={{ color: theme.primary }} />
+          <h3 className="text-2xl font-bold text-white">World Map</h3>
+          <p className="text-xs text-white/60 ml-auto">Click on map to check weather</p>
         </div>
-        <div className="glass-card rounded-xl p-3 text-center">
-          <p className="text-xs text-white/60 mb-1">Temperature</p>
-          <p className="text-lg font-bold text-white">{weather.temp}°C</p>
-        </div>
-        <div className="glass-card rounded-xl p-3 text-center">
-          <p className="text-xs text-white/60 mb-1">Condition</p>
-          <p className="text-sm font-bold text-white">{weather.condition}</p>
-        </div>
+
+        <div
+          ref={mapRef}
+          className="relative w-full rounded-2xl overflow-hidden border border-white/10 cursor-pointer"
+          style={{ height: '400px', zIndex: 1 }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-3 gap-3 mt-6"
+        >
+          <div className="glass-card rounded-xl p-3 text-center">
+            <p className="text-xs text-white/60 mb-1">Location</p>
+            <p className="text-sm font-bold text-white">{weather.city}</p>
+          </div>
+          <div className="glass-card rounded-xl p-3 text-center">
+            <p className="text-xs text-white/60 mb-1">Temperature</p>
+            <p className="text-lg font-bold text-white">{weather.temp}°C</p>
+          </div>
+          <div className="glass-card rounded-xl p-3 text-center">
+            <p className="text-xs text-white/60 mb-1">Condition</p>
+            <p className="text-sm font-bold text-white">{weather.condition}</p>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      <AnimatePresence>
+        {showConfirmation && clickedLocation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => !isLoadingLocation && setShowConfirmation(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card rounded-3xl p-6 sm:p-8 max-w-sm w-full"
+            >
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Check Weather?</h3>
+              <p className="text-white/70 text-sm sm:text-base mb-6">
+                Do you want to check the weather for this location?
+              </p>
+              <p className="text-white/60 text-xs sm:text-sm mb-6">
+                Coordinates: {clickedLocation.lat.toFixed(4)}, {clickedLocation.lng.toFixed(4)}
+              </p>
+              <div className="flex gap-3 sm:gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowConfirmation(false)}
+                  disabled={isLoadingLocation}
+                  className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all disabled:opacity-50"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                  }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleConfirmLocation}
+                  disabled={isLoadingLocation}
+                  className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all text-white disabled:opacity-50"
+                  style={{
+                    background: 'rgba(6, 182, 212, 0.3)',
+                    border: '1px solid rgba(6, 182, 212, 0.5)',
+                  }}
+                >
+                  {isLoadingLocation ? 'Loading...' : 'Yes, Check'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -65,6 +65,9 @@ export default function App() {
       setWeather({
         city: data.location.name,
         country: data.location.country,
+        lat: data.location.lat,
+        lon: data.location.lon,
+        timezone: data.location.tz_id,
         temp: Math.round(current.temp_c),
         feelsLike: Math.round(current.feelslike_c),
         condition: current.condition.text,
@@ -144,13 +147,42 @@ export default function App() {
     setDeleteConfirm(null);
   };
 
-  // Get filtered hourly data for 24-hour cycle starting from current time
+  // Get filtered hourly data for 24-hour cycle starting from current time in location's timezone
   const getFilteredHourlyData = () => {
     if (!hourlyData || hourlyData.length === 0) return [];
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentDate = now.toISOString().split('T')[0];
+    // Get current time in the location's timezone
+    let currentHour;
+    let currentDate;
+
+    if (weather && weather.timezone) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: weather.timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(new Date());
+        const dateObj = {};
+        parts.forEach(part => {
+          dateObj[part.type] = part.value;
+        });
+        currentHour = parseInt(dateObj.hour);
+        currentDate = `${dateObj.year}-${dateObj.month}-${dateObj.day}`;
+      } catch (e) {
+        // Fallback to local time if timezone is invalid
+        const now = new Date();
+        currentHour = now.getHours();
+        currentDate = now.toISOString().split('T')[0];
+      }
+    } else {
+      const now = new Date();
+      currentHour = now.getHours();
+      currentDate = now.toISOString().split('T')[0];
+    }
 
     // Create a 24-hour range starting from current hour
     const filtered = [];
@@ -184,10 +216,29 @@ export default function App() {
     return filtered.slice(0, 24); // Ensure exactly 24 hours
   };
 
-  // Get display label for hour (Now or time)
+  // Get display label for hour (Now or time) based on location's timezone
   const getHourLabel = (hourTime) => {
-    const now = new Date();
-    const currentHour = now.getHours();
+    // Get current hour in the location's timezone
+    let currentHour;
+
+    if (weather && weather.timezone) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: weather.timezone,
+          hour: '2-digit',
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(new Date());
+        const hourPart = parts.find(p => p.type === 'hour');
+        currentHour = parseInt(hourPart.value);
+      } catch (e) {
+        // Fallback to local time if timezone is invalid
+        currentHour = new Date().getHours();
+      }
+    } else {
+      currentHour = new Date().getHours();
+    }
+
     const [hourNum] = hourTime.split(':');
     const hour24 = parseInt(hourNum);
 
@@ -458,7 +509,7 @@ export default function App() {
                     </motion.div>
 
                     {/* Weather Map */}
-                    <RealWorldMap weather={weather} theme={theme} isDark={isDark} />
+                    <RealWorldMap weather={weather} theme={theme} isDark={isDark} onLocationClick={fetchWeather} />
 
                     {/* Hourly Forecast */}
                     <motion.div
@@ -631,7 +682,7 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <RealWorldMap weather={weather} theme={theme} isDark={isDark} />
+                      <RealWorldMap weather={weather} theme={theme} isDark={isDark} onLocationClick={fetchWeather} />
                     </motion.div>
                   )}
                 </motion.div>

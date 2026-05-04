@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Loader } from 'lucide-react';
 import aiChatIcon from '../assets/AI-chat-icon.png';
-import './ChatWidget.css';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
