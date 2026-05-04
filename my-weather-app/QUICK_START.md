@@ -1,88 +1,98 @@
-# Quick Start Guide
+# ⚡ Quick Start - AI Weather Assistant
 
-## 🎯 Get Running in 2 Minutes
+## 🎯 5-Minute Setup
 
-### 1. Install Dependencies
+### Step 1: Install Ollama (2 min)
 ```bash
-npm install
+# Download from https://ollama.ai
+# Install and run
+
+# Then pull the model
+ollama pull deepseek-r1:1.5b
 ```
 
-### 2. Start Development Server
+### Step 2: Setup Backend (2 min)
 ```bash
+cd my-weather-app/backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup environment
+cp .env.example .env
+# Edit .env and add your OpenWeatherMap API key
+# (Get free key from https://openweathermap.org/api)
+
+# Start backend
+python main.py
+```
+
+### Step 3: Run Frontend (1 min)
+```bash
+cd my-weather-app
 npm run dev
 ```
 
-The app will open at `http://localhost:5173`
+### Step 4: Test! 🎉
+- Open `http://localhost:5173`
+- Click the blue chat icon (bottom-right)
+- Ask: "What's the weather in Mumbai?"
 
-### 3. That's it! 🎉
+## 📋 Checklist
 
-## 🌍 Default Location
+- [ ] Ollama installed and running
+- [ ] DeepSeek model pulled (`ollama pull deepseek-r1:1.5b`)
+- [ ] Backend dependencies installed
+- [ ] `.env` file configured with API key
+- [ ] Backend running on `http://localhost:5000`
+- [ ] Frontend running on `http://localhost:5173`
+- [ ] Chat widget visible in app
 
-The app loads with **Delhi, India** by default. You can:
-- Search for any city using the search bar
-- Save locations to the sidebar
-- Switch between saved locations
+## 🔗 Important URLs
 
-## 🎨 Features to Try
+| Service | URL | Status |
+|---------|-----|--------|
+| Ollama | `http://localhost:11434` | Should be running |
+| Backend | `http://localhost:5000` | Should be running |
+| Frontend | `http://localhost:5173` | Should be running |
 
-### 1. Search Bar
-- Type any city name
-- Indian cities are prioritized
-- Click to load weather
+## 💬 Try These Queries
 
-### 2. Theme Switching
-- Click the Sun/Moon icon (top right)
-- Toggles between light and dark modes
-- Theme changes based on weather conditions
-
-### 3. Save Locations
-- Click "Add Current Location" in sidebar
-- Saved locations persist in browser
-- Click any saved location to view weather
-
-### 4. Explore Weather Data
-- **Current Weather**: Temperature, feels-like, wind, humidity
-- **24-Hour Forecast**: Hourly predictions
-- **7-Day Forecast**: Daily weather trends
-- **Sun & Moon Tracker**: Celestial positions
-
-## 🎬 Watch the Animations
-
-Different weather conditions trigger unique animations:
-- ☀️ **Clear**: Shimmer effect
-- 🌧️ **Rain**: Raindrop animations
-- ❄️ **Snow**: Frost effects
-- ⛈️ **Storm**: Lightning flashes
-- 🍂 **Autumn**: Floating particles
-
-## 📱 Responsive Design
-
-- Works on mobile, tablet, and desktop
-- Sidebar moves below on mobile
-- Touch-friendly interface
-
-## 🔧 Build for Production
-
-```bash
-npm run build
+```
+"What's the weather in Mumbai?"
+"Will it rain tomorrow?"
+"Is it a good time to go jogging?"
+"How humid is it in Delhi?"
+"What's the temperature forecast?"
 ```
 
-Output goes to `dist/` folder - ready to deploy!
+## 🆘 Quick Troubleshooting
 
-## 📚 Learn More
+| Problem | Solution |
+|---------|----------|
+| "Cannot connect to Ollama" | Run `ollama serve` in another terminal |
+| "Model not found" | Run `ollama pull deepseek-r1:1.5b` |
+| "Chat not working" | Check backend is running on port 5000 |
+| "API key error" | Get free key from openweathermap.org |
 
-See `WEATHER_APP_GUIDE.md` for:
-- Detailed component documentation
-- Customization guide
-- API information
-- Troubleshooting
+## 📚 Full Documentation
+
+- **Setup Guide**: `AI_AGENT_SETUP.md`
+- **Backend Docs**: `backend/README.md`
+- **Implementation**: `IMPLEMENTATION_SUMMARY.md`
 
 ## 🚀 Next Steps
 
-1. **Customize**: Change default location, colors, animations
-2. **Deploy**: Push to Vercel, Netlify, or GitHub Pages
-3. **Extend**: Add more features (alerts, favorites, etc.)
+1. Get OpenWeatherMap API key (free)
+2. Install Ollama
+3. Run backend
+4. Run frontend
+5. Chat with AI! 🤖
 
 ---
 
-**Happy weather tracking! 🌤️**
+**That's it! You're ready to go! 🎉**

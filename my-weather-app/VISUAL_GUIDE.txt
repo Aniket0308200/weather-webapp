@@ -1,0 +1,145 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   AI WEATHER ASSISTANT - VISUAL GUIDE                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ STEP 1: PREREQUISITES ─────────────────────────────────────────────────────┐
+│                                                                             │
+│  ✓ Python 3.8+          → Download from python.org                        │
+│  ✓ Ollama               → Download from ollama.ai                         │
+│  ✓ OpenWeatherMap Key   → Get free key from openweathermap.org/api        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 2: FIRST TIME SETUP (DO ONCE) ────────────────────────────────────────┐
+│                                                                             │
+│  1. Get API Key:                                                           │
+│     → https://openweathermap.org/api                                      │
+│     → Sign up (free)                                                       │
+│     → Copy API key                                                         │
+│                                                                             │
+│  2. Setup .env file:                                                       │
+│     → cd my-weather-app/backend                                           │
+│     → copy .env.example .env (Windows)                                    │
+│     → cp .env.example .env (macOS/Linux)                                  │
+│                                                                             │
+│  3. Edit .env:                                                             │
+│     → Open .env in text editor                                            │
+│     → Replace 'your_api_key_here' with your actual key                    │
+│     → Save                                                                 │
+│                                                                             │
+│  4. Install Ollama:                                                        │
+│     → Download from ollama.ai                                             │
+│     → Install                                                              │
+│     → Run: ollama pull deepseek-r1:1.5b                                   │
+│     → Wait for download (~1GB)                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 3: RUNNING (EVERY TIME) ──────────────────────────────────────────────┐
+│                                                                             │
+│  You need 3 TERMINALS open at the same time:                              │
+│                                                                             │
+│  ┌─ TERMINAL 1: OLLAMA ────────────────────────────────────────────────┐  │
+│  │                                                                     │  │
+│  │  $ ollama serve                                                     │  │
+│  │                                                                     │  │
+│  │  Expected: Listening on 127.0.0.1:11434                           │  │
+│  │  Status: ✓ KEEP RUNNING                                           │  │
+│  │                                                                     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌─ TERMINAL 2: BACKEND ───────────────────────────────────────────────┐  │
+│  │                                                                     │  │
+│  │  Windows:                                                           │  │
+│  │  $ cd my-weather-app\backend                                       │  │
+│  │  $ run_backend.bat                                                 │  │
+│  │                                                                     │  │
+│  │  macOS/Linux:                                                       │  │
+│  │  $ cd my-weather-app/backend                                       │  │
+│  │  $ chmod +x run_backend.sh                                         │  │
+│  │  $ ./run_backend.sh                                                │  │
+│  │                                                                     │  │
+│  │  Expected: Running on http://127.0.0.1:5000                       │  │
+│  │  Status: ✓ KEEP RUNNING                                           │  │
+│  │                                                                     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌─ TERMINAL 3: FRONTEND ──────────────────────────────────────────────┐  │
+│  │                                                                     │  │
+│  │  $ cd my-weather-app                                               │  │
+│  │  $ npm run dev                                                      │  │
+│  │                                                                     │  │
+│  │  Expected: Local: http://localhost:5173/                          │  │
+│  │  Status: ✓ KEEP RUNNING                                           │  │
+│  │                                                                     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 4: OPEN BROWSER ──────────────────────────────────────────────────────┐
+│                                                                             │
+│  Go to: http://localhost:5173                                             │
+│                                                                             │
+│  You should see your Weather App                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 5: TEST CHAT ─────────────────────────────────────────────────────────┐
+│                                                                             │
+│  1. Look for BLUE CHAT ICON in bottom-right corner                        │
+│  2. Click it to open chat                                                 │
+│  3. Type: "What's the weather in Mumbai?"                                 │
+│  4. Get AI response!                                                      │
+│                                                                             │
+│  Other queries to try:                                                    │
+│  • "Will it rain tomorrow?"                                               │
+│  • "Is it a good time to go jogging?"                                     │
+│  • "How humid is it in Delhi?"                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                         TROUBLESHOOTING                                    ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Problem: "Cannot connect to Ollama"
+Solution: Make sure Terminal 1 is running "ollama serve"
+
+Problem: "Port 5000 already in use"
+Solution: Close other apps or restart computer
+
+Problem: "Module not found"
+Solution: Run "pip install -r requirements.txt" in Terminal 2
+
+Problem: "API key error"
+Solution: Check .env file has correct API key
+
+Problem: Chat not responding
+Solution: Check all 3 terminals are running
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                         QUICK REFERENCE                                   ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Service          Command                          Port    Status
+─────────────────────────────────────────────────────────────────────────────
+Ollama           ollama serve                     11434   Must run
+Backend          run_backend.bat / .sh            5000    Must run
+Frontend         npm run dev                      5173    Must run
+Browser          http://localhost:5173           -       Open here
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    DOCUMENTATION FILES                                    ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+START_HERE.md              ← Read this first!
+RUN_BACKEND_NOW.md         ← Simple running instructions
+BACKEND_SETUP_GUIDE.md     ← Detailed setup guide
+SETUP_DIAGRAM.md           ← Visual diagrams
+backend/README.md          ← Backend documentation
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                         YOU'RE READY!                                     ║
+║                                                                            ║
+║  Follow the steps above and enjoy your AI Weather Assistant! 🌤️          ║
+╚════════════════════════════════════════════════════════════════════════════╝

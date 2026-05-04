@@ -7,6 +7,7 @@ import DynamicBackground from './components/DynamicBackground';
 import Navigation from './components/Navigation';
 import RealWorldMap from './components/RealWorldMap';
 import SunMoonInfo from './components/SunMoonInfo';
+import ChatWidget from './components/ChatWidget';
 import { getThemeByWeatherCode } from './utils/weatherTheme';
 import { getCustomWeatherIcon, getBackgroundType } from './utils/weatherIcons';
 
@@ -473,6 +474,8 @@ export default function App() {
                             const hourTime = hour.time.split(' ')[1];
                             const label = getHourLabel(hourTime);
                             const isNow = label === 'Now';
+                            // Use the isDay value from the hourly data
+                            const hourIsDay = hour.isDay !== undefined ? hour.isDay : true;
 
                             return (
                               <motion.div
@@ -489,7 +492,7 @@ export default function App() {
                                 <span className={`text-xs font-semibold ${isNow ? 'text-white font-bold' : 'text-white/70'}`}>
                                   {label}
                                 </span>
-                                {hour.code && <img src={getCustomWeatherIcon(hour.code, hour.temp, '', hour.isDay !== undefined ? hour.isDay : true)} alt="" className="w-6 sm:w-8 h-6 sm:h-8" />}
+                                {hour.code && <img src={getCustomWeatherIcon(hour.code, hour.temp, '', hourIsDay)} alt="" className="w-6 sm:w-8 h-6 sm:h-8" />}
                                 <span className="text-xs sm:text-sm font-bold text-white">{Math.round(hour.temp)}°</span>
                               </motion.div>
                             );
@@ -514,7 +517,10 @@ export default function App() {
                         <span>📅</span> 7-Day Forecast
                       </h3>
                       <div className="space-y-2 sm:space-y-3 overflow-y-auto scrollbar-hide flex-1">
-                        {dailyData.slice(0, 7).map((day, idx) => (
+                        {dailyData.slice(0, 7).map((day, idx) => {
+                          // For 7-day forecast, show daytime icons (isDay = true) since we're showing max temp
+                          const isDayForForecast = true;
+                          return (
                           <motion.div
                             key={idx}
                             initial={{ opacity: 0, x: 20 }}
@@ -526,7 +532,7 @@ export default function App() {
                               <span className="text-xs sm:text-sm font-semibold text-white">
                                 {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                               </span>
-                              {day.code && <img src={getCustomWeatherIcon(day.code, day.maxTemp, getBackgroundType(day.code, weather.isDay), weather.isDay)} alt="" className="w-5 sm:w-6 h-5 sm:h-6" />}
+                              {day.code && <img src={getCustomWeatherIcon(day.code, day.maxTemp, getBackgroundType(day.code, isDayForForecast), isDayForForecast)} alt="" className="w-5 sm:w-6 h-5 sm:h-6" />}
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
@@ -548,7 +554,8 @@ export default function App() {
                               </div>
                             )}
                           </motion.div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </motion.div>
 
@@ -707,6 +714,9 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Chat Widget */}
+      <ChatWidget />
     </div>
   );
 }
